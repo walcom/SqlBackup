@@ -37,7 +37,7 @@ namespace SqlBackup
         /// <summary>
         /// To backup Database
         /// </summary>
-        private void BackupAttendanceDB()
+        private void DoDatabaseBackup()
         {
             try
             {
@@ -101,7 +101,7 @@ namespace SqlBackup
                 //BackupSenatesDB();
                 //BackupHrisDB();
                 //BackupHallsMgmtSystemDB();
-                BackupAttendanceDB();
+                DoDatabaseBackup();
             }
             catch (Exception)
             {
