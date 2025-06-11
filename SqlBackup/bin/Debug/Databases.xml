@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<BackupDatabases>
+  <BackupDatabase>
+    <BackupPath>D:\backups\</BackupPath>
+    <ServerName>.\SQLEXPRESS</ServerName>
+    <DBName>dbName</DBName>
+    <UserName>user</UserName>
+    <Password>password</Password>
+  </BackupDatabase>
+</BackupDatabases>
