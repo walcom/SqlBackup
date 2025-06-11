@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
-using SQLDMO;
+using Microsoft.SqlServer.Management.Smo;
+using Microsoft.SqlServer.Management.Common;
+//using SQLDMO;
 
 namespace SqlBackup
 {
@@ -39,15 +38,17 @@ namespace SqlBackup
         /// </summary>
         private void DoDatabaseBackup()
         {
+            string message = "";
+
             try
             {
-                SQLDMO.SQLServer server = new SQLServer();
+                //SQLDMO.SQLServer server = new SQLServer();
                 Backup backup = new Backup();
 
                 var query = from e in XElement.Load("Databases.xml").Elements("BackupDatabase")
                             select new BackupDatabase
                             {
-                                BackupPath=(string)e.Element("BackupPath"),
+                                BackupPath = (string)e.Element("BackupPath"),
                                 ServerName = (string)e.Element("ServerName"),
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
@@ -63,31 +64,81 @@ namespace SqlBackup
                     {
                         string backupPath = dbToBackup.BackupPath;
                         string backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
+                        string backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
 
-                        server.LoginSecure = true;
-                        server.Connect(dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
-
+                        backup.Action = BackupActionType.Database;
+                        backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
+                        backup.BackupSetName = "FullBackup";
                         backup.Database = dbToBackup.DBName;
+
+                        BackupDeviceItem deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
+
+                        // define server connection
+                        ServerConnection connection = new ServerConnection(dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+                        Server sqlServer = new Server(connection);
+                        sqlServer.ConnectionContext.StatementTimeout = 60 * 60;
+                        Database db = sqlServer.Databases[dbToBackup.DBName];
+
                         backup.Initialize = true;
-                        backup.Files = backupPath + backupFileName;
-                        backup.Action = SQLDMO_BACKUP_TYPE.SQLDMOBackup_Database;
-                        backup.SQLBackup(server);
-                        server.DisConnect();
+                        backup.Checksum = true;
+                        backup.ContinueAfterError = true;
+                        backup.Devices.Add(deviceItem);
+
+                        backup.Incremental = false; // set to be full database backup
+                        backup.ExpirationDate = DateTime.Today.AddDays(90);
+                        backup.LogTruncation = BackupTruncateLogType.Truncate; // log must be truncated after the backup is complete
+                        backup.FormatMedia = false;
+
+                        backup.SqlBackup(sqlServer);
+                        backup.Devices.Remove(deviceItem);
+
+
+                        //server.LoginSecure = true;
+                        //server.Connect(dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+
+                        //backup.Database = dbToBackup.DBName;
+                        //backup.Initialize = true;
+                        //backup.Files = backupPath + backupFileName;
+                        //backup.Action = SQLDMO_BACKUP_TYPE.SQLDMOBackup_Database;
+                        //backup.SQLBackup(server);
+                        //server.DisConnect();
 
                         string messageTitle = string.Format("{0} Backup Tool", dbToBackup.DBName);
-                        string message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
-                        EventLog.WriteEntry(messageTitle, message, EventLogEntryType.Information);
+                        message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
+                        //EventLog.WriteEntry(messageTitle, message, EventLogEntryType.Information);
+
+                        using (EventLog elog = new EventLog("Application"))
+                        {
+                            elog.Source = "Application";
+                            elog.WriteEntry(message, EventLogEntryType.Information, 101, 1);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);
+                        using (EventLog elog = new EventLog("Application"))
+                        {
+                            message = string.Format("Error in Database Backup Tool For Database: {0} {1}", dbToBackup.DBName, ex.Message);
+
+                            elog.Source = "Application";
+                            elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
+                        }
+
+                        //EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);
                         continue;
                     }
                 }
             }
             catch (Exception ex)
             {
-                EventLog.WriteEntry("Error in Database Backup Tool", ex.Message, EventLogEntryType.Warning);
+                using (EventLog elog = new EventLog("Application"))
+                {
+                    message = string.Format("Error in Database Backup Tool  {0}", ex.Message);
+
+                    elog.Source = "Application";
+                    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
+                }
+
+                //EventLog.WriteEntry("Error in Database Backup Tool", ex.Message, EventLogEntryType.Warning);
             }
         }
 
@@ -98,9 +149,6 @@ namespace SqlBackup
         {
             try
             {
-                //BackupSenatesDB();
-                //BackupHrisDB();
-                //BackupHallsMgmtSystemDB();
                 DoDatabaseBackup();
             }
             catch (Exception)

@@ -2,9 +2,9 @@
 <BackupDatabases>
   <BackupDatabase>
     <BackupPath>D:\backups\</BackupPath>
-    <ServerName>.\SQLEXPRESS</ServerName>
-    <DBName>dbName</DBName>
-    <UserName>user</UserName>
-    <Password>password</Password>
+    <ServerName>.\sql2k19</ServerName>
+    <DBName>QassimDarb</DBName>
+    <UserName>test</UserName>
+    <Password>test</Password>
   </BackupDatabase>
 </BackupDatabases>
