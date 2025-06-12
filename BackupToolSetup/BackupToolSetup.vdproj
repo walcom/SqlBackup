@@ -1841,22 +1841,17 @@
         "InstallerBootstrapper" = "3:2"
             "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
             {
-            "Enabled" = "11:TRUE"
+            "Enabled" = "11:FALSE"
             "PromptEnabled" = "11:TRUE"
-            "PrerequisitesLocation" = "2:1"
+            "PrerequisitesLocation" = "2:2"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Net.Framework.3.5.SP1"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.1"
                     {
-                    "Name" = "8:.NET Framework 3.5 SP1"
-                    "ProductCode" = "8:Microsoft.Net.Framework.3.5.SP1"
-                    }
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.3.1"
-                    {
-                    "Name" = "8:Windows Installer 3.1"
-                    "ProductCode" = "8:Microsoft.Windows.Installer.3.1"
+                    "Name" = "8:Microsoft .NET Framework 4.7.1 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.1"
                     }
                 }
             }
@@ -3919,7 +3914,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Database Backup Tool"
         "ProductCode" = "8:{2523AE33-A1A0-42FE-9840-3BB4A8202B4A}"
-        "PackageCode" = "8:{C0B8AFCE-C103-4E22-99E1-CD79FF336842}"
+        "PackageCode" = "8:{01252B01-C57A-4EA3-94EC-9FFC5992889F}"
         "UpgradeCode" = "8:{ACF2AD39-CBBD-4C20-B12F-EEB7DBC12784}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
@@ -4440,7 +4435,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_6CCFC657A51F4B9EBE18939DD325F31E"
             {
-            "SourcePath" = "8:..\\SqlBackup\\obj\\Debug\\SqlBackup.exe"
+            "SourcePath" = "8:..\\SqlBackup\\obj\\Release\\SqlBackup.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FC37828CFAED4143B6BA74173FA72800"

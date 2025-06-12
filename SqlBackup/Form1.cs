@@ -74,9 +74,20 @@ namespace SqlBackup
                         BackupDeviceItem deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
 
                         // define server connection
-                        ServerConnection connection = new ServerConnection(dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+                        ServerConnection connection = new ServerConnection(@dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+                        connection.LoginSecure = false;
+
                         Server sqlServer = new Server(connection);
                         sqlServer.ConnectionContext.StatementTimeout = 60 * 60;
+                        sqlServer.ConnectionContext.Connect();
+
+                        using (EventLog elog = new EventLog("Application"))
+                        {
+                            message = "Connected successfully to " + dbToBackup.ServerName;
+                            elog.Source = "Application";
+                            elog.WriteEntry(message, EventLogEntryType.Information, 101, 1);
+                        }
+
                         Database db = sqlServer.Databases[dbToBackup.DBName];
 
                         backup.Initialize = true;
@@ -85,7 +96,7 @@ namespace SqlBackup
                         backup.Devices.Add(deviceItem);
 
                         backup.Incremental = false; // set to be full database backup
-                        backup.ExpirationDate = DateTime.Today.AddDays(90);
+                        backup.ExpirationDate = DateTime.Today.AddDays(180);
                         backup.LogTruncation = BackupTruncateLogType.Truncate; // log must be truncated after the backup is complete
                         backup.FormatMedia = false;
 
