@@ -945,6 +945,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_D3AC43642AC04A92AB646066E41FC5AA"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_D7D168BE964B6E654420A5AD8BA344E5"
         "OwnerKey" = "8:_E17FE73DE666A1F56C7E47FC014F41A9"
         "MsmSig" = "8:_UNDEFINED"
@@ -1055,6 +1061,12 @@
         {
         "MsmKey" = "8:_D836BA04A6E1D60CAA22B7CDA532C32B"
         "OwnerKey" = "8:_FE756A9EA25FC57044CA8DC5E797C2CB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_DA2D4B83426240F48D48C6A74B9EBA78"
+        "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -3330,6 +3342,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D3AC43642AC04A92AB646066E41FC5AA"
+            {
+            "SourcePath" = "8:..\\SqlBackup\\bin\\Debug\\Microsoft.Data.SqlClient.SNI.x86.dll"
+            "TargetName" = "8:Microsoft.Data.SqlClient.SNI.x86.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FC37828CFAED4143B6BA74173FA72800"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_D7D168BE964B6E654420A5AD8BA344E5"
             {
             "AssemblyRegister" = "3:1"
@@ -3390,6 +3422,26 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DA2D4B83426240F48D48C6A74B9EBA78"
+            {
+            "SourcePath" = "8:..\\SqlBackup\\bin\\Debug\\Microsoft.Data.SqlClient.SNI.x64.dll"
+            "TargetName" = "8:Microsoft.Data.SqlClient.SNI.x64.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FC37828CFAED4143B6BA74173FA72800"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_DAE543790B323389EEF691002B1C6F04"
@@ -3914,7 +3966,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Database Backup Tool"
         "ProductCode" = "8:{2523AE33-A1A0-42FE-9840-3BB4A8202B4A}"
-        "PackageCode" = "8:{01252B01-C57A-4EA3-94EC-9FFC5992889F}"
+        "PackageCode" = "8:{B647CB25-C85D-4BD4-90D3-F3772A40256C}"
         "UpgradeCode" = "8:{ACF2AD39-CBBD-4C20-B12F-EEB7DBC12784}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
@@ -4435,7 +4487,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_6CCFC657A51F4B9EBE18939DD325F31E"
             {
-            "SourcePath" = "8:..\\SqlBackup\\obj\\Release\\SqlBackup.exe"
+            "SourcePath" = "8:..\\SqlBackup\\obj\\Debug\\SqlBackup.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FC37828CFAED4143B6BA74173FA72800"
