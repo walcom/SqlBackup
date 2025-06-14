@@ -19,17 +19,14 @@ namespace SqlBackup
         {
             InitializeComponent();
 
-            dateTimePart = string.Format("{0}{1}{2}_{3}{4}", GetNumberCode(DateTime.Now.Day), GetNumberCode(DateTime.Now.Month),
-                GetNumberCode(DateTime.Now.Year), GetNumberCode(DateTime.Now.Hour), GetNumberCode(DateTime.Now.Minute));
+            dateTimePart = string.Format("{0}{1}{2}_{3}{4}", GetNumberCode(DateTime.Now.Year), GetNumberCode(DateTime.Now.Month),
+                GetNumberCode(DateTime.Now.Day), GetNumberCode(DateTime.Now.Hour), GetNumberCode(DateTime.Now.Minute));
         }
 
 
         private string GetNumberCode(int number)
         {
-            if (number < 10)
-                return string.Format("0{0}", number);
-            else
-                return number.ToString();
+            return (number < 10) ? string.Format("0{0}", number) : number.ToString();
         }
 
 
