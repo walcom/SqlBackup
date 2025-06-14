@@ -128,8 +128,8 @@ namespace SqlBackup
                     {
                         using (EventLog elog = new EventLog("Application"))
                         {
-                            message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} ",
-                                dbToBackup.DBName, ex.Message, ex.StackTrace); // -- {3}, ex.InnerException);
+                            message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
+                                dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
 
                             elog.Source = "Application";
                             elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);

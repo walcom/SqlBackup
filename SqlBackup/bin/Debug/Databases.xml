@@ -1,10 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <BackupDatabases>
-  <BackupDatabase>
+  <!--<BackupDatabase>
     <BackupPath>D:\backups\</BackupPath>
     <ServerName>.\sql2k19</ServerName>
     <DBName>QassimDarb</DBName>
     <UserName>test</UserName>
     <Password>test</Password>
-  </BackupDatabase>
+  </BackupDatabase>-->
+	<BackupDatabase>
+		<BackupPath>D:\Backup\</BackupPath>
+		<ServerName>192.168.100.169</ServerName>
+		<DBName>PMMS</DBName>
+		<UserName>sa</UserName>
+		<Password>Ibrahim@123</Password>
+	</BackupDatabase>
 </BackupDatabases>
