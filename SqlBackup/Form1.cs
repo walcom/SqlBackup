@@ -40,9 +40,10 @@ namespace SqlBackup
             try
             {
                 //SQLDMO.SQLServer server = new SQLServer();
+                string filePath = Environment.CurrentDirectory + "\\Databases.xml"; // HostingEnvironment.ApplicationPhysicalPath 
                 Backup backup = new Backup();
 
-                var query = from e in XElement.Load("Databases.xml").Elements("BackupDatabase")
+                var query = from e in XElement.Load(filePath).Elements("BackupDatabase")
                             select new BackupDatabase
                             {
                                 BackupPath = (string)e.Element("BackupPath"),
