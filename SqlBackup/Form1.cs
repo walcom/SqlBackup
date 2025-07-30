@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using Microsoft.SqlServer.Management.Smo;
 using Microsoft.SqlServer.Management.Common;
+using System.IO;
 //using SQLDMO;
 
 namespace SqlBackup
@@ -40,7 +41,12 @@ namespace SqlBackup
             try
             {
                 //SQLDMO.SQLServer server = new SQLServer();
-                string filePath = Environment.CurrentDirectory + "\\Databases.xml"; // HostingEnvironment.ApplicationPhysicalPath 
+                //var directory = Directory.GetCurrentDirectory();
+                var currentDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory.ToString());
+                //WriteInEventLog("Path: " + currentDir, EventLogEntryType.Information);
+
+                // Environment.CurrentDirectory 
+                string filePath = currentDir + "\\Databases.xml"; // HostingEnvironment.ApplicationPhysicalPath 
                 Backup backup = new Backup();
 
                 var query = from e in XElement.Load(filePath).Elements("BackupDatabase")
@@ -116,22 +122,19 @@ namespace SqlBackup
                         message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
                         //EventLog.WriteEntry(messageTitle, message, EventLogEntryType.Information);
 
-                        using (EventLog elog = new EventLog("Application"))
-                        {
-                            elog.Source = "Application";
-                            elog.WriteEntry(message, EventLogEntryType.Information, 101, 1);
-                        }
+                        WriteInEventLog(message, EventLogEntryType.Information);
                     }
                     catch (Exception ex)
                     {
-                        using (EventLog elog = new EventLog("Application"))
-                        {
-                            message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
-                                dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
+                        message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
+                            dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
 
-                            elog.Source = "Application";
-                            elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
-                        }
+                        WriteInEventLog(message, EventLogEntryType.Warning);
+                        //using (EventLog elog = new EventLog("Application"))
+                        //{
+                        //    elog.Source = "Application";
+                        //    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
+                        //}
 
                         //EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);
                         continue;
@@ -140,18 +143,28 @@ namespace SqlBackup
             }
             catch (Exception ex)
             {
-                using (EventLog elog = new EventLog("Application"))
-                {
-                    message = string.Format("Error in Database Backup Tool  {0}", ex.Message);
+                message = string.Format("Error in Database Backup Tool  {0}", ex.Message);
 
-                    elog.Source = "Application";
-                    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
-                }
+                WriteInEventLog(message, EventLogEntryType.Warning);
+                //using (EventLog elog = new EventLog("Application"))
+                //{                   
+                //    elog.Source = "Application";
+                //    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
+                //}
 
                 //EventLog.WriteEntry("Error in Database Backup Tool", ex.Message, EventLogEntryType.Warning);
             }
         }
 
+
+        private void WriteInEventLog(string message, EventLogEntryType type)
+        {
+            using (EventLog elog = new EventLog("Application"))
+            {
+                elog.Source = "Application";
+                elog.WriteEntry(message, type, 101, 1);
+            }
+        }
 
 
 
