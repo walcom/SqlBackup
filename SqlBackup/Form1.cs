@@ -16,6 +16,7 @@ namespace SqlBackup
     public partial class Form1 : Form
     {
         private string dateTimePart;
+        private List<Task> activeTasks = new List<Task>();
 
         public Form1()
         {
@@ -23,6 +24,44 @@ namespace SqlBackup
 
             dateTimePart = string.Format("{0}{1}{2}_{3}{4}", GetNumberCode(DateTime.Now.Year), GetNumberCode(DateTime.Now.Month),
                 GetNumberCode(DateTime.Now.Day), GetNumberCode(DateTime.Now.Hour), GetNumberCode(DateTime.Now.Minute));
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            DoDatabaseBackup();
+
+            try
+            {
+                if (activeTasks.Any())
+                {
+                    // Wait for all tasks with a 10 minute timeout
+                    bool completed = Task.WaitAll(activeTasks.ToArray(), TimeSpan.FromMinutes(10));
+                    //if (!completed)
+                    //{
+                    //    WriteInEventLog("Some backup compression tasks did not complete within timeout period", EventLogEntryType.Warning);
+                    //}
+
+                    // Check for any faulted tasks
+                    //var faultedTasks = activeTasks.Where(t => t.IsFaulted).ToList();
+                    //if (faultedTasks.Any())
+                    //{
+                    //    foreach(var task in faultedTasks)
+                    //    {
+                    //        WriteInEventLog($"Task failed: {task.Exception?.InnerException?.Message}", EventLogEntryType.Error);
+                    //    }
+                    //    Environment.ExitCode = 1; // Indicate error
+                    //}
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteInEventLog($"Error waiting for backup tasks: {ex.Message}", EventLogEntryType.Error);
+                Environment.ExitCode = 1;
+            }
+            finally
+            {
+                Application.Exit();
+            }
         }
 
 
@@ -35,7 +74,7 @@ namespace SqlBackup
         /// <summary>
         /// To backup Database
         /// </summary>
-        private void DoDatabaseBackup()
+        private async Task DoDatabaseBackup()
         {
             string message = "";
 
@@ -55,20 +94,24 @@ namespace SqlBackup
                 ServerConnection connection;
                 BackupDeviceItem deviceItem;
                 Backup backup = new Backup();
+
+                List<BackupDatabase> list;
                 IEnumerable<BackupDatabase> query;
 
                 try
                 {
-                     query = from e in XElement.Load(filePath).Elements("BackupDatabase")
-                                select new BackupDatabase
-                                {
-                                    BackupPath = (string)e.Element("BackupPath"),
-                                    ServerName = (string)e.Element("ServerName"),
-                                    DBName = (string)e.Element("DBName"),
-                                    UserName = (string)e.Element("UserName"),
-                                    Password = (string)e.Element("Password"),
-                                    Compressed = (int)e.Element("Compressed")
-                                };
+                    query = from e in XElement.Load(filePath).Elements("BackupDatabase")
+                            select new BackupDatabase
+                            {
+                                BackupPath = (string)e.Element("BackupPath"),
+                                ServerName = (string)e.Element("ServerName"),
+                                DBName = (string)e.Element("DBName"),
+                                UserName = (string)e.Element("UserName"),
+                                Password = (string)e.Element("Password"),
+                                Compressed = (int)e.Element("Compressed")
+                            };
+
+                    list = query.ToList();
                 }
                 catch (Exception)
                 {
@@ -82,14 +125,14 @@ namespace SqlBackup
                                 Password = (string)e.Element("Password"),
                                 Compressed = 0
                             };
+
+                    list = query.ToList();
                 }
 
-               
-               
 
                 string backupPath = "", backupFileName = "", compressedFileName = "";
                 string backupDestination = "", compressedDestination = "";
-                List<BackupDatabase> list = query.ToList();
+
                 foreach (BackupDatabase dbToBackup in list)
                 {
                     //BackupDatabase dbToBackup = list[0];
@@ -142,9 +185,15 @@ namespace SqlBackup
                         if (dbToBackup.Compressed == 1)
                         {
                             // Start compression in a separate thread
-                            Task.Run(() => CompressBackupFile(backupDestination, compressedDestination))
+                            //bool isComplete = false;
+                            //taskCompletionFlags.Add(false); // Add flag for new task
+                            //int taskIndex = taskCompletionFlags.Count - 1;
+
+                            Task newTask = Task.Run(() => CompressBackupFile(backupDestination, compressedDestination))
                                 .ContinueWith(task =>
                                 {
+                                    //try 
+                                    //{
                                     if (task.Exception != null)
                                     {
                                         WriteInEventLog($"Compression failed: {task.Exception.InnerException?.Message}",
@@ -155,7 +204,16 @@ namespace SqlBackup
                                         message = $"Backup has been compressed into the file: {compressedDestination}";
                                         WriteInEventLog(message, EventLogEntryType.Information);
                                     }
+                                    //}
+                                    //finally
+                                    //{
+                                    //    taskCompletionFlags[taskIndex] = true; // Set completion flag
+                                    //}
                                 }, TaskScheduler.FromCurrentSynchronizationContext());
+
+
+                            activeTasks.Add(newTask);
+                            //await newTask;
                         }
 
 
@@ -184,8 +242,8 @@ namespace SqlBackup
             catch (Exception ex)
             {
                 message = string.Format("Error in Database Backup Tool  {0}", ex.Message);
-
                 WriteInEventLog(message, EventLogEntryType.Warning);
+
                 //using (EventLog elog = new EventLog("Application"))
                 //{                   
                 //    elog.Source = "Application";
@@ -203,7 +261,7 @@ namespace SqlBackup
                 using (FileStream originalFileStream = File.OpenRead(sourceFile))
                 using (FileStream compressedFileStream = File.Create(destinationFile))
                 using (System.IO.Compression.GZipStream compressionStream =
-                    new System.IO.Compression.GZipStream(compressedFileStream, System.IO.Compression.CompressionLevel.Fastest)) //Optimal
+                    new System.IO.Compression.GZipStream(compressedFileStream, System.IO.Compression.CompressionLevel.Optimal)) //Fastest 
                 {
                     originalFileStream.CopyTo(compressionStream);
                 }
@@ -225,25 +283,6 @@ namespace SqlBackup
             {
                 elog.Source = "Application";
                 elog.WriteEntry(message, type, 101, 1);
-            }
-        }
-
-
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                DoDatabaseBackup();
-            }
-            catch (Exception)
-            {
-
-            }
-            finally
-            {
-                //Application.Exit();
-                System.Windows.Forms.Application.Exit();
             }
         }
 

@@ -2,15 +2,15 @@
 <BackupDatabases>
 	<BackupDatabase>
 		<BackupPath>D:\backups\</BackupPath>
-		<ServerName>.</ServerName>
-		<DBName>PMMS</DBName>
+		<ServerName>.\sql2k22</ServerName>
+		<DBName>PMMS_D</DBName>
 		<UserName>pmms_user</UserName>
 		<Password>123</Password>
-		<!--<Compressed>0</Compressed>-->
+		<Compressed>0</Compressed>
 	</BackupDatabase>
 	<BackupDatabase>
 		<BackupPath>D:\backups\</BackupPath>
-		<ServerName>.</ServerName>
+		<ServerName>.\sql2k22</ServerName>
 		<DBName>PMMS_Ahsaa</DBName>
 		<UserName>pmms_user</UserName>
 		<Password>123</Password>
