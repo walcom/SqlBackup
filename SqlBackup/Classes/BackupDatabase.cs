@@ -8,5 +8,6 @@
         public string UserName { get; set; }
         public string Password { get; set; }
 
+        public int Compressed { get; set; } = 0;
     }
 }

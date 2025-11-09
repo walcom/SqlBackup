@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Microsoft.SqlServer.Management.Smo;
 using Microsoft.SqlServer.Management.Common;
 using System.IO;
+using System.Threading.Tasks;
 //using SQLDMO;
 
 namespace SqlBackup
@@ -47,18 +48,47 @@ namespace SqlBackup
 
                 // Environment.CurrentDirectory 
                 string filePath = currentDir + "\\Databases.xml"; // HostingEnvironment.ApplicationPhysicalPath 
-                Backup backup = new Backup();
 
-                var query = from e in XElement.Load(filePath).Elements("BackupDatabase")
+                EventLog elog;
+                Server sqlServer;
+                Database db;
+                ServerConnection connection;
+                BackupDeviceItem deviceItem;
+                Backup backup = new Backup();
+                IEnumerable<BackupDatabase> query;
+
+                try
+                {
+                     query = from e in XElement.Load(filePath).Elements("BackupDatabase")
+                                select new BackupDatabase
+                                {
+                                    BackupPath = (string)e.Element("BackupPath"),
+                                    ServerName = (string)e.Element("ServerName"),
+                                    DBName = (string)e.Element("DBName"),
+                                    UserName = (string)e.Element("UserName"),
+                                    Password = (string)e.Element("Password"),
+                                    Compressed = (int)e.Element("Compressed")
+                                };
+                }
+                catch (Exception)
+                {
+                    query = from e in XElement.Load(filePath).Elements("BackupDatabase")
                             select new BackupDatabase
                             {
                                 BackupPath = (string)e.Element("BackupPath"),
                                 ServerName = (string)e.Element("ServerName"),
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
-                                Password = (string)e.Element("Password")
+                                Password = (string)e.Element("Password"),
+                                Compressed = 0
                             };
+                }
 
+               
+               
+
+                string backupPath = "", backupFileName = "", compressedFileName = "";
+                string backupDestination = "", compressedDestination = "";
                 List<BackupDatabase> list = query.ToList();
                 foreach (BackupDatabase dbToBackup in list)
                 {
@@ -66,62 +96,71 @@ namespace SqlBackup
 
                     try
                     {
-                        string backupPath = dbToBackup.BackupPath;
-                        string backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
-                        string backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
+                        backupPath = dbToBackup.BackupPath;
+                        backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
+                        compressedFileName = backupFileName + ".gz";
+                        backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
+                        compressedDestination = string.Format("{0}{1}", backupPath, compressedFileName);
 
                         backup.Action = BackupActionType.Database;
                         backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
                         backup.BackupSetName = "FullBackup";
                         backup.Database = dbToBackup.DBName;
 
-                        BackupDeviceItem deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
+                        deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
 
                         // define server connection
-                        ServerConnection connection = new ServerConnection(@dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+                        connection = new ServerConnection(@dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
                         connection.LoginSecure = false;
 
-                        Server sqlServer = new Server(connection);
+                        sqlServer = new Server(connection);
                         sqlServer.ConnectionContext.StatementTimeout = 60 * 60;
                         sqlServer.ConnectionContext.Connect();
 
-                        using (EventLog elog = new EventLog("Application"))
+                        using (elog = new EventLog("Application"))
                         {
                             message = "Connected successfully to " + dbToBackup.ServerName;
                             elog.Source = "Application";
                             elog.WriteEntry(message, EventLogEntryType.Information, 101, 1);
                         }
 
-                        Database db = sqlServer.Databases[dbToBackup.DBName];
+                        db = sqlServer.Databases[dbToBackup.DBName];
 
                         backup.Initialize = true;
                         backup.Checksum = true;
                         backup.ContinueAfterError = true;
                         backup.Devices.Add(deviceItem);
 
-                        backup.Incremental = false; // set to be full database backup
+                        backup.Incremental = false;
                         backup.ExpirationDate = DateTime.Today.AddDays(180);
-                        backup.LogTruncation = BackupTruncateLogType.Truncate; // log must be truncated after the backup is complete
+                        backup.LogTruncation = BackupTruncateLogType.Truncate;
                         backup.FormatMedia = false;
 
                         backup.SqlBackup(sqlServer);
                         backup.Devices.Remove(deviceItem);
 
+                        if (dbToBackup.Compressed == 1)
+                        {
+                            // Start compression in a separate thread
+                            Task.Run(() => CompressBackupFile(backupDestination, compressedDestination))
+                                .ContinueWith(task =>
+                                {
+                                    if (task.Exception != null)
+                                    {
+                                        WriteInEventLog($"Compression failed: {task.Exception.InnerException?.Message}",
+                                            EventLogEntryType.Warning);
+                                    }
+                                    else
+                                    {
+                                        message = $"Backup has been compressed into the file: {compressedDestination}";
+                                        WriteInEventLog(message, EventLogEntryType.Information);
+                                    }
+                                }, TaskScheduler.FromCurrentSynchronizationContext());
+                        }
 
-                        //server.LoginSecure = true;
-                        //server.Connect(dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
-
-                        //backup.Database = dbToBackup.DBName;
-                        //backup.Initialize = true;
-                        //backup.Files = backupPath + backupFileName;
-                        //backup.Action = SQLDMO_BACKUP_TYPE.SQLDMOBackup_Database;
-                        //backup.SQLBackup(server);
-                        //server.DisConnect();
 
                         string messageTitle = string.Format("{0} Backup Tool", dbToBackup.DBName);
                         message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
-                        //EventLog.WriteEntry(messageTitle, message, EventLogEntryType.Information);
-
                         WriteInEventLog(message, EventLogEntryType.Information);
                     }
                     catch (Exception ex)
@@ -130,14 +169,15 @@ namespace SqlBackup
                             dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
 
                         WriteInEventLog(message, EventLogEntryType.Warning);
+                        continue;
+
                         //using (EventLog elog = new EventLog("Application"))
                         //{
                         //    elog.Source = "Application";
                         //    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
                         //}
 
-                        //EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);
-                        continue;
+                        //EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);                        
                     }
                 }
             }
@@ -153,6 +193,28 @@ namespace SqlBackup
                 //}
 
                 //EventLog.WriteEntry("Error in Database Backup Tool", ex.Message, EventLogEntryType.Warning);
+            }
+        }
+
+        private void CompressBackupFile(string sourceFile, string destinationFile)
+        {
+            try
+            {
+                using (FileStream originalFileStream = File.OpenRead(sourceFile))
+                using (FileStream compressedFileStream = File.Create(destinationFile))
+                using (System.IO.Compression.GZipStream compressionStream =
+                    new System.IO.Compression.GZipStream(compressedFileStream, System.IO.Compression.CompressionLevel.Fastest)) //Optimal
+                {
+                    originalFileStream.CopyTo(compressionStream);
+                }
+
+                // Delete the original file after successful compression
+                if (File.Exists(destinationFile))
+                    File.Delete(sourceFile);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error compressing file: {ex.Message}", ex);
             }
         }
 

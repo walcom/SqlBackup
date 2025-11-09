@@ -6,6 +6,7 @@
 		<DBName>PMMS</DBName>
 		<UserName>pmms_user</UserName>
 		<Password>123</Password>
+		<!--<Compressed>0</Compressed>-->
 	</BackupDatabase>
 	<BackupDatabase>
 		<BackupPath>D:\backups\</BackupPath>
@@ -13,5 +14,6 @@
 		<DBName>PMMS_Ahsaa</DBName>
 		<UserName>pmms_user</UserName>
 		<Password>123</Password>
+		<Compressed>1</Compressed>
 	</BackupDatabase>
 </BackupDatabases>
