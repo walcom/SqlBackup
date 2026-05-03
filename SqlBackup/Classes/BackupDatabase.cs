@@ -9,5 +9,6 @@
         public string Password { get; set; }
 
         public int Compressed { get; set; } = 0;
+        public string FinalCompressingPath { get; set; }
     }
 }

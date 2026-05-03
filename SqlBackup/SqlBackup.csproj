@@ -280,6 +280,7 @@
     <None Include="app.config" />
     <None Include="FinalSetup\BackupToolSetup.msi" />
     <None Include="FinalSetup\BackupToolSetup_old.msi" />
+    <None Include="FinalSetup\BackupToolSetup_old2.msi" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

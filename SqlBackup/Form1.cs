@@ -108,7 +108,9 @@ namespace SqlBackup
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
                                 Password = (string)e.Element("Password"),
-                                Compressed = (int)e.Element("Compressed")
+
+                                Compressed = (int)e.Element("Compressed"),
+                                FinalCompressingPath = (string)e.Element("FinalCompressingPath")
                             };
 
                     list = query.ToList();
@@ -123,7 +125,9 @@ namespace SqlBackup
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
                                 Password = (string)e.Element("Password"),
-                                Compressed = 0
+
+                                Compressed = 0,
+                                FinalCompressingPath = (string)e.Element("BackupPath")
                             };
 
                     list = query.ToList();
@@ -131,7 +135,7 @@ namespace SqlBackup
 
 
                 string backupPath = "", backupFileName = "", compressedFileName = "";
-                string backupDestination = "", compressedDestination = "";
+                string backupDestination = "", compressedDestination = "", compressingPath = "";
 
                 foreach (BackupDatabase dbToBackup in list)
                 {
@@ -140,10 +144,12 @@ namespace SqlBackup
                     try
                     {
                         backupPath = dbToBackup.BackupPath;
+                        compressingPath = dbToBackup.FinalCompressingPath;
+
                         backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
                         compressedFileName = backupFileName + ".gz";
                         backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
-                        compressedDestination = string.Format("{0}{1}", backupPath, compressedFileName);
+                        compressedDestination = string.Format("{0}{1}", compressingPath, compressedFileName);
 
                         backup.Action = BackupActionType.Database;
                         backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
