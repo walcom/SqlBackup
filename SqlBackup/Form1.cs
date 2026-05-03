@@ -9,6 +9,7 @@ using Microsoft.SqlServer.Management.Smo;
 using Microsoft.SqlServer.Management.Common;
 using System.IO;
 using System.Threading.Tasks;
+using SqlBackup.Classes;
 //using SQLDMO;
 
 namespace SqlBackup
@@ -22,8 +23,8 @@ namespace SqlBackup
         {
             InitializeComponent();
 
-            dateTimePart = string.Format("{0}{1}{2}_{3}{4}", GetNumberCode(DateTime.Now.Year), GetNumberCode(DateTime.Now.Month),
-                GetNumberCode(DateTime.Now.Day), GetNumberCode(DateTime.Now.Hour), GetNumberCode(DateTime.Now.Minute));
+            dateTimePart = string.Format("{0}{1}{2}_{3}{4}", HelperClass.GetNumberCode(DateTime.Now.Year), HelperClass.GetNumberCode(DateTime.Now.Month),
+                HelperClass.GetNumberCode(DateTime.Now.Day), HelperClass.GetNumberCode(DateTime.Now.Hour), HelperClass.GetNumberCode(DateTime.Now.Minute));
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -55,7 +56,7 @@ namespace SqlBackup
             }
             catch (Exception ex)
             {
-                WriteInEventLog($"Error waiting for backup tasks: {ex.Message}", EventLogEntryType.Error);
+                HelperClass.WriteInEventLog($"Error waiting for backup tasks: {ex.Message}", EventLogEntryType.Error);
                 Environment.ExitCode = 1;
             }
             finally
@@ -65,10 +66,7 @@ namespace SqlBackup
         }
 
 
-        private string GetNumberCode(int number)
-        {
-            return (number < 10) ? string.Format("0{0}", number) : number.ToString();
-        }
+
 
 
         /// <summary>
@@ -151,6 +149,7 @@ namespace SqlBackup
                         backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
                         compressedDestination = string.Format("{0}{1}", compressingPath, compressedFileName);
 
+
                         backup.Action = BackupActionType.Database;
                         backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
                         backup.BackupSetName = "FullBackup";
@@ -195,20 +194,20 @@ namespace SqlBackup
                             //taskCompletionFlags.Add(false); // Add flag for new task
                             //int taskIndex = taskCompletionFlags.Count - 1;
 
-                            Task newTask = Task.Run(() => CompressBackupFile(backupDestination, compressedDestination))
+                            Task newTask = Task.Run(() => HelperClass.CompressBackupFile(backupDestination, compressedDestination))
                                 .ContinueWith(task =>
                                 {
                                     //try 
                                     //{
                                     if (task.Exception != null)
                                     {
-                                        WriteInEventLog($"Compression failed: {task.Exception.InnerException?.Message}",
+                                        HelperClass.WriteInEventLog($"Compression failed: {task.Exception.InnerException?.Message}",
                                             EventLogEntryType.Warning);
                                     }
                                     else
                                     {
                                         message = $"Backup has been compressed into the file: {compressedDestination}";
-                                        WriteInEventLog(message, EventLogEntryType.Information);
+                                        HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
                                     }
                                     //}
                                     //finally
@@ -225,14 +224,14 @@ namespace SqlBackup
 
                         string messageTitle = string.Format("{0} Backup Tool", dbToBackup.DBName);
                         message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
-                        WriteInEventLog(message, EventLogEntryType.Information);
+                        HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
                     }
                     catch (Exception ex)
                     {
                         message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
                             dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
 
-                        WriteInEventLog(message, EventLogEntryType.Warning);
+                        HelperClass.WriteInEventLog(message, EventLogEntryType.Warning);
                         continue;
 
                         //using (EventLog elog = new EventLog("Application"))
@@ -248,7 +247,7 @@ namespace SqlBackup
             catch (Exception ex)
             {
                 message = string.Format("Error in Database Backup Tool  {0}", ex.Message);
-                WriteInEventLog(message, EventLogEntryType.Warning);
+                HelperClass.WriteInEventLog(message, EventLogEntryType.Warning);
 
                 //using (EventLog elog = new EventLog("Application"))
                 //{                   
@@ -260,37 +259,7 @@ namespace SqlBackup
             }
         }
 
-        private void CompressBackupFile(string sourceFile, string destinationFile)
-        {
-            try
-            {
-                using (FileStream originalFileStream = File.OpenRead(sourceFile))
-                using (FileStream compressedFileStream = File.Create(destinationFile))
-                using (System.IO.Compression.GZipStream compressionStream =
-                    new System.IO.Compression.GZipStream(compressedFileStream, System.IO.Compression.CompressionLevel.Optimal)) //Fastest 
-                {
-                    originalFileStream.CopyTo(compressionStream);
-                }
 
-                // Delete the original file after successful compression
-                if (File.Exists(destinationFile))
-                    File.Delete(sourceFile);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error compressing file: {ex.Message}", ex);
-            }
-        }
-
-
-        private void WriteInEventLog(string message, EventLogEntryType type)
-        {
-            using (EventLog elog = new EventLog("Application"))
-            {
-                elog.Source = "Application";
-                elog.WriteEntry(message, type, 101, 1);
-            }
-        }
 
 
     }
