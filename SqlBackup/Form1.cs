@@ -23,8 +23,10 @@ namespace SqlBackup
         {
             InitializeComponent();
 
-            dateTimePart = string.Format("{0}{1}{2}_{3}{4}", HelperClass.GetNumberCode(DateTime.Now.Year), HelperClass.GetNumberCode(DateTime.Now.Month),
-                HelperClass.GetNumberCode(DateTime.Now.Day), HelperClass.GetNumberCode(DateTime.Now.Hour), HelperClass.GetNumberCode(DateTime.Now.Minute));
+            dateTimePart = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+            //dateTimePart = string.Format("{0}{1}{2}_{3}{4}", HelperClass.GetNumberCode(DateTime.Now.Year), HelperClass.GetNumberCode(DateTime.Now.Month),
+            //    HelperClass.GetNumberCode(DateTime.Now.Day), HelperClass.GetNumberCode(DateTime.Now.Hour), HelperClass.GetNumberCode(DateTime.Now.Minute));
         }
 
         private void Form1_Load(object sender, EventArgs e)
