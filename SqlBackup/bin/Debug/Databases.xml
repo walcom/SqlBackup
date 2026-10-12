@@ -12,10 +12,11 @@
 	<BackupDatabase>
 		<BackupPath>D:\backups\</BackupPath>
 		<FinalCompressingPath>D:\AMS\</FinalCompressingPath>
-		<ServerName>.\sql2k22</ServerName>
-		<DBName>PMMS_Ahsaa</DBName>
+		<ServerName>.\sql2k25</ServerName>
+		<DBName>PMMS_STMOMAH</DBName>
 		<UserName>pmms_user</UserName>
 		<Password>123</Password>
+		<ServiceAccountName>NT SERVICE\MSSQL$SQL2K25</ServiceAccountName>
 		<Compressed>1</Compressed>
 	</BackupDatabase>
 </BackupDatabases>

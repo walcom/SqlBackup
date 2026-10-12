@@ -108,6 +108,7 @@ namespace SqlBackup
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
                                 Password = (string)e.Element("Password"),
+                                ServiceAccountName = (string)e.Element("ServiceAccountName"),
 
                                 Compressed = (int)e.Element("Compressed"),
                                 FinalCompressingPath = (string)e.Element("FinalCompressingPath")
@@ -125,6 +126,7 @@ namespace SqlBackup
                                 DBName = (string)e.Element("DBName"),
                                 UserName = (string)e.Element("UserName"),
                                 Password = (string)e.Element("Password"),
+                                ServiceAccountName = (string)e.Element("ServiceAccountName"),
 
                                 Compressed = 0,
                                 FinalCompressingPath = (string)e.Element("BackupPath")
@@ -147,7 +149,7 @@ namespace SqlBackup
                         compressingPath = dbToBackup.FinalCompressingPath;
 
                         backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
-                        compressedFileName = backupFileName + ".gz";
+                        compressedFileName = backupFileName + ".zip";
                         backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
                         compressedDestination = string.Format("{0}{1}", compressingPath, compressedFileName);
 
@@ -196,7 +198,8 @@ namespace SqlBackup
                             //taskCompletionFlags.Add(false); // Add flag for new task
                             //int taskIndex = taskCompletionFlags.Count - 1;
 
-                            Task newTask = Task.Run(() => HelperClass.CompressBackupFile(backupDestination, compressedDestination))
+                            Task newTask = Task.Run(() => HelperClass.CompressBackupFile(
+                                backupDestination, compressedDestination, dbToBackup.ServiceAccountName))
                                 .ContinueWith(task =>
                                 {
                                     //try 
