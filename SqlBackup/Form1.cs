@@ -157,7 +157,7 @@ namespace SqlBackup
         /// </summary>
         private void BackupAndCompress(BackupDatabase dbToBackup)
         {
-            string message;
+            string message = "";
 
             try
             {

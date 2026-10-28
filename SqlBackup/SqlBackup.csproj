@@ -283,6 +283,7 @@
     <None Include="app.config" />
     <None Include="app.manifest" />
     <None Include="FinalSetup\BackupToolSetup.msi" />
+    <None Include="FinalSetup\BackupToolSetup_202610.msi" />
     <None Include="FinalSetup\BackupToolSetup202605.msi" />
     <None Include="FinalSetup\BackupToolSetup_old.msi" />
     <None Include="FinalSetup\BackupToolSetup_old2.msi" />
