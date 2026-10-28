@@ -9,6 +9,9 @@ Before running this tool, in SqlBackup/bin/Debug/Databases.xml, change this sett
 	-**UserName**: User
 	-**Password**: Password
 	-**Compressed**: 1 to compress, 0 for no compression 
+	-**ServiceAccountName**: Name of service account that SQL Server service use, for example: NT Service\MSSQL$SqlServerName 
+	(can be found in services, right click on SQL Server service, select properties, and then select Log On tab)
+	
 
 
 And then put the exe path in  **Windows Tasks Scheduler**.
