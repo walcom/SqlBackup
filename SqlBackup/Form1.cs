@@ -37,8 +37,9 @@ namespace SqlBackup
             {
                 if (activeTasks.Any())
                 {
-                    // Wait for all tasks with a 10 minute timeout
-                    bool completed = Task.WaitAll(activeTasks.ToArray(), TimeSpan.FromMinutes(10));
+                    // Wait for all backup/compression tasks. No overall timeout: the process exiting
+                    // would kill in-flight backups; each backup is bounded by StatementTimeout.
+                    Task.WaitAll(activeTasks.ToArray());
                     //if (!completed)
                     //{
                     //    WriteInEventLog("Some backup compression tasks did not complete within timeout period", EventLogEntryType.Warning);
@@ -74,7 +75,7 @@ namespace SqlBackup
         /// <summary>
         /// To backup Database
         /// </summary>
-        private async Task DoDatabaseBackup()
+        private void DoDatabaseBackup()
         {
             string message = "";
 
@@ -87,13 +88,6 @@ namespace SqlBackup
 
                 // Environment.CurrentDirectory 
                 string filePath = currentDir + "\\Databases.xml"; // HostingEnvironment.ApplicationPhysicalPath 
-
-                EventLog elog;
-                Server sqlServer;
-                Database db;
-                ServerConnection connection;
-                BackupDeviceItem deviceItem;
-                Backup backup = new Backup();
 
                 List<BackupDatabase> list;
                 IEnumerable<BackupDatabase> query;
@@ -136,117 +130,10 @@ namespace SqlBackup
                 }
 
 
-                string backupPath = "", backupFileName = "", compressedFileName = "";
-                string backupDestination = "", compressedDestination = "", compressingPath = "";
-
+                // Each database is backed up (and compressed) in its own parallel task
                 foreach (BackupDatabase dbToBackup in list)
                 {
-                    //BackupDatabase dbToBackup = list[0];
-
-                    try
-                    {
-                        backupPath = dbToBackup.BackupPath;
-                        compressingPath = dbToBackup.FinalCompressingPath;
-
-                        backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
-                        compressedFileName = backupFileName + ".zip";
-                        backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
-                        compressedDestination = string.Format("{0}{1}", compressingPath, compressedFileName);
-
-
-                        backup.Action = BackupActionType.Database;
-                        backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
-                        backup.BackupSetName = "FullBackup";
-                        backup.Database = dbToBackup.DBName;
-
-                        deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
-
-                        // define server connection
-                        connection = new ServerConnection(@dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
-                        connection.LoginSecure = false;
-
-                        sqlServer = new Server(connection);
-                        sqlServer.ConnectionContext.StatementTimeout = 60 * 60;
-                        sqlServer.ConnectionContext.Connect();
-
-                        using (elog = new EventLog("Application"))
-                        {
-                            message = "Connected successfully to " + dbToBackup.ServerName;
-                            elog.Source = "Application";
-                            elog.WriteEntry(message, EventLogEntryType.Information, 101, 1);
-                        }
-
-                        db = sqlServer.Databases[dbToBackup.DBName];
-
-                        backup.Initialize = true;
-                        backup.Checksum = true;
-                        backup.ContinueAfterError = true;
-                        backup.Devices.Add(deviceItem);
-
-                        backup.Incremental = false;
-                        backup.ExpirationDate = DateTime.Today.AddDays(180);
-                        backup.LogTruncation = BackupTruncateLogType.Truncate;
-                        backup.FormatMedia = false;
-
-                        backup.SqlBackup(sqlServer);
-                        backup.Devices.Remove(deviceItem);
-
-                        if (dbToBackup.Compressed == 1)
-                        {
-                            // Start compression in a separate thread
-                            //bool isComplete = false;
-                            //taskCompletionFlags.Add(false); // Add flag for new task
-                            //int taskIndex = taskCompletionFlags.Count - 1;
-
-                            Task newTask = Task.Run(() => HelperClass.CompressBackupFile(
-                                backupDestination, compressedDestination, dbToBackup.ServiceAccountName))
-                                .ContinueWith(task =>
-                                {
-                                    //try 
-                                    //{
-                                    if (task.Exception != null)
-                                    {
-                                        HelperClass.WriteInEventLog($"Compression failed: {task.Exception.InnerException?.Message}",
-                                            EventLogEntryType.Warning);
-                                    }
-                                    else
-                                    {
-                                        message = $"Backup has been compressed into the file: {compressedDestination}";
-                                        HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
-                                    }
-                                    //}
-                                    //finally
-                                    //{
-                                    //    taskCompletionFlags[taskIndex] = true; // Set completion flag
-                                    //}
-                                }, TaskScheduler.FromCurrentSynchronizationContext());
-
-
-                            activeTasks.Add(newTask);
-                            //await newTask;
-                        }
-
-
-                        string messageTitle = string.Format("{0} Backup Tool", dbToBackup.DBName);
-                        message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
-                        HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
-                            dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException); // 
-
-                        HelperClass.WriteInEventLog(message, EventLogEntryType.Warning);
-                        continue;
-
-                        //using (EventLog elog = new EventLog("Application"))
-                        //{
-                        //    elog.Source = "Application";
-                        //    elog.WriteEntry(message, EventLogEntryType.Warning, 101, 1);
-                        //}
-
-                        //EventLog.WriteEntry("Error in Database Backup Tool For Database: " + dbToBackup.DBName, ex.Message, EventLogEntryType.Warning);                        
-                    }
+                    activeTasks.Add(Task.Run(() => BackupAndCompress(dbToBackup)));
                 }
             }
             catch (Exception ex)
@@ -261,6 +148,92 @@ namespace SqlBackup
                 //}
 
                 //EventLog.WriteEntry("Error in Database Backup Tool", ex.Message, EventLogEntryType.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Backs up a single database and, if configured, compresses the backup file.
+        /// Runs on a worker thread, so it uses only local state.
+        /// </summary>
+        private void BackupAndCompress(BackupDatabase dbToBackup)
+        {
+            string message;
+
+            try
+            {
+                string backupPath = dbToBackup.BackupPath;
+                string compressingPath = dbToBackup.FinalCompressingPath;
+
+                string backupFileName = string.Format("{0}_DB_{1}.bak", dbToBackup.DBName, dateTimePart);
+                string compressedFileName = backupFileName + ".zip";
+                string backupDestination = string.Format("{0}{1}", backupPath, backupFileName);
+                string compressedDestination = string.Format("{0}{1}", compressingPath, compressedFileName);
+
+                Backup backup = new Backup();
+                backup.Action = BackupActionType.Database;
+                backup.BackupSetDescription = string.Format("Backup of {0} on {1}", dbToBackup.DBName, dateTimePart);
+                backup.BackupSetName = "FullBackup";
+                backup.Database = dbToBackup.DBName;
+
+                BackupDeviceItem deviceItem = new BackupDeviceItem(backupDestination, DeviceType.File);
+
+                // define server connection
+                ServerConnection connection = new ServerConnection(@dbToBackup.ServerName, dbToBackup.UserName, dbToBackup.Password);
+                connection.LoginSecure = false;
+
+                Server sqlServer = new Server(connection);
+                sqlServer.ConnectionContext.StatementTimeout = 60 * 60;
+
+                try
+                {
+                    sqlServer.ConnectionContext.Connect();
+
+                    HelperClass.WriteInEventLog("Connected successfully to " + dbToBackup.ServerName, EventLogEntryType.Information);
+
+                    backup.Initialize = true;
+                    backup.Checksum = true;
+                    backup.ContinueAfterError = true;
+                    backup.Devices.Add(deviceItem);
+
+                    backup.Incremental = false;
+                    backup.ExpirationDate = DateTime.Today.AddDays(180);
+                    backup.LogTruncation = BackupTruncateLogType.Truncate;
+                    backup.FormatMedia = false;
+
+                    backup.SqlBackup(sqlServer);
+                    backup.Devices.Remove(deviceItem);
+                }
+                finally
+                {
+                    if (sqlServer.ConnectionContext.IsOpen)
+                        sqlServer.ConnectionContext.Disconnect();
+                }
+
+                message = string.Format("Backup has been taken successfully into the file: {0}{1}", backupPath, backupFileName);
+                HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
+
+                if (dbToBackup.Compressed == 1)
+                {
+                    try
+                    {
+                        HelperClass.CompressBackupFile(backupDestination, compressedDestination, dbToBackup.ServiceAccountName);
+
+                        message = $"Backup has been compressed into the file: {compressedDestination}";
+                        HelperClass.WriteInEventLog(message, EventLogEntryType.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        HelperClass.WriteInEventLog($"Compression failed: {ex.InnerException?.Message ?? ex.Message}",
+                            EventLogEntryType.Warning);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                message = string.Format("Error in Database Backup Tool For Database: {0} -- {1} -- {2} -- {3}",
+                    dbToBackup.DBName, ex.Message, ex.StackTrace, ex.InnerException);
+
+                HelperClass.WriteInEventLog(message, EventLogEntryType.Warning);
             }
         }
 
