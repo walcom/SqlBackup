@@ -3,21 +3,21 @@ https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.Microsoft
 
 Before running this tool, in SqlBackup/bin/Debug/Databases.xml, change this settings for each database you want to backup:
 
-    -**BackupPath**: D:\YourBackupPath\ 
+    -BackupPath: D:\YourBackupPath\ 
 
-	-**FinalCompressingPath**: D:\YourBackupCompressingPath\
+	-FinalCompressingPath: D:\YourBackupCompressingPath\
 
-	-**ServerName**: .\SqlServerName
+	-ServerName: .\SqlServerName
 
-	-**DB Name**: DBName
+	-DB Name: DBName
 
-	-**UserName**: User
+	-UserName: Username
 
-	-**Password**: Password
+	-Password: Password
 
-	-**Compressed**: 1 to compress, 0 for no compression 
+	-Compressed: 1 to compress the backup file, 0 for no compression 
 
-	-**ServiceAccountName**: Name of service account that SQL Server service use, for example: NT Service\MSSQL$SqlServerName 
+	-ServiceAccountName: Name of service account that SQL Server service use, for example: NT Service\MSSQL$SqlServerName 
 	(can be found in services, right click on SQL Server service, select properties, and then select Log On tab)
 	
 
